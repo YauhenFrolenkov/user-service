@@ -1,7 +1,10 @@
 package com.innowise.user.service.impl;
 
+import com.innowise.user.dto.card.PaymentCardRequestDto;
+import com.innowise.user.dto.card.PaymentCardResponseDto;
 import com.innowise.user.entity.PaymentCard;
 import com.innowise.user.entity.User;
+import com.innowise.user.mapper.PaymentCardMapper;
 import com.innowise.user.repository.PaymentCardRepository;
 import com.innowise.user.repository.UserRepository;
 import com.innowise.user.service.PaymentCardService;
@@ -13,84 +16,93 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 @Service
-@Transactional
 public class PaymentCardServiceImpl implements PaymentCardService {
 
     private final PaymentCardRepository paymentCardRepository;
     private final UserRepository userRepository;
+    private final PaymentCardMapper paymentCardMapper;
 
-    public PaymentCardServiceImpl(PaymentCardRepository paymentCardRepository, UserRepository userRepository) {
+    public PaymentCardServiceImpl(PaymentCardRepository paymentCardRepository, UserRepository userRepository, PaymentCardMapper paymentCardMapper) {
         this.paymentCardRepository = paymentCardRepository;
         this.userRepository = userRepository;
+        this.paymentCardMapper = paymentCardMapper;
     }
 
     @Override
-    public PaymentCard createCard(PaymentCard card) {
-        User user = card.getUser();
-        if (user == null || user.getId() == null) {
-            throw new IllegalArgumentException("Card must be associated with an existing user");
-        }
+    public PaymentCardResponseDto createCard(PaymentCardRequestDto dto) {
+        User user = userRepository.findById(dto.getUserId())
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
-        User existingUser = userRepository.findById(user.getId())
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
-
-        int currentCards = paymentCardRepository.countByUserId(existingUser.getId());
+        int currentCards = paymentCardRepository.countByUserId(user.getId());
         if (currentCards >= 5) {
             throw new IllegalStateException("User cannot have more than 5 cards");
         }
 
-        card.setUser(existingUser);
-        return paymentCardRepository.save(card);
+        PaymentCard card = paymentCardMapper.toEntity(dto);
+        card.setUser(user);
+        PaymentCard saved = paymentCardRepository.save(card);
+
+        return paymentCardMapper.toDto(saved);
     }
 
     @Override
-    public PaymentCard getCardById(Long id) {
-        return paymentCardRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Payment card not found"));
+    public PaymentCardResponseDto getCardById(Long id) {
+        PaymentCard card = getCardEntityById(id);
+        return paymentCardMapper.toDto(card);
     }
 
     @Override
-    public List<PaymentCard> getCardsByUserId(Long userId) {
-        return paymentCardRepository.findByUserId(userId);
+    public List<PaymentCardResponseDto> getCardsByUserId(Long userId) {
+        return paymentCardRepository.findByUserId(userId).stream().map(paymentCardMapper::toDto).toList();
     }
 
     @Override
-    public PaymentCard updateCard(Long id, PaymentCard card) {
-        PaymentCard existing = getCardById(id);
-        existing.setNumber(card.getNumber());
-        existing.setHolder(card.getHolder());
-        existing.setExpirationDate(card.getExpirationDate());
-        existing.setActive(card.getActive());
-        return paymentCardRepository.save(existing);
+    @Transactional
+    public PaymentCardResponseDto updateCard(Long id, PaymentCardRequestDto dto) {
+        PaymentCard existing = getCardEntityById(id);
+        existing.setNumber(dto.getNumber());
+        existing.setHolder(dto.getHolder());
+        existing.setExpirationDate(dto.getExpirationDate());
+
+        PaymentCard saved = paymentCardRepository.save(existing);
+        return paymentCardMapper.toDto(saved);
     }
 
     @Override
+    @Transactional
     public void activateCard(Long id) {
-        PaymentCard card = getCardById(id);
+        PaymentCard card = getCardEntityById(id);
         card.setActive(true);
         paymentCardRepository.save(card);
     }
 
     @Override
+    @Transactional
     public void deactivateCard(Long id) {
-        PaymentCard card = getCardById(id);
+        PaymentCard card = getCardEntityById(id);
         card.setActive(false);
         paymentCardRepository.save(card);
     }
 
     @Override
-    public Page<PaymentCard> getAllCards(Pageable pageable) {
-        return paymentCardRepository.findAll(pageable);
+    public Page<PaymentCardResponseDto> getAllCards(Pageable pageable) {
+        return paymentCardRepository.findAll(pageable).map(paymentCardMapper::toDto);
     }
 
     @Override
-    public List<PaymentCard> getAllActiveCards() {
-        return paymentCardRepository.findAllActiveCards();
+    public List<PaymentCardResponseDto> getAllActiveCards() {
+        return paymentCardRepository.findAllActiveCards().stream().map(paymentCardMapper::toDto).toList();
     }
 
     @Override
-    public PaymentCard getCardByNumber(String number) {
-        return paymentCardRepository.findByNumberNative(number)
-                .orElseThrow(() -> new IllegalArgumentException("Card not found"));
+    public PaymentCardResponseDto getCardByNumber(String number) {
+        PaymentCard card = paymentCardRepository.findByNumberNative(number)
+                .orElseThrow(() -> new RuntimeException("Card not found"));
+        return paymentCardMapper.toDto(card);
+    }
+
+    private PaymentCard getCardEntityById(Long id) {
+        return paymentCardRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Payment card not found"));
     }
 }

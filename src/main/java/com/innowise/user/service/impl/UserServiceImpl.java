@@ -1,6 +1,9 @@
 package com.innowise.user.service.impl;
 
+import com.innowise.user.dto.user.UserRequestDto;
+import com.innowise.user.dto.user.UserResponseDto;
 import com.innowise.user.entity.User;
+import com.innowise.user.mapper.UserMapper;
 import com.innowise.user.repository.UserRepository;
 import com.innowise.user.service.UserService;
 import com.innowise.user.specification.UserSpecification;
@@ -13,28 +16,32 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Optional;
 
 @Service
-@Transactional
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
+    private final UserMapper userMapper;
 
-    public UserServiceImpl(UserRepository userRepository) {
+    public UserServiceImpl(UserRepository userRepository, UserMapper userMapper) {
         this.userRepository = userRepository;
+        this.userMapper = userMapper;
     }
 
     @Override
-    public User createUser(User user) {
-        return userRepository.save(user);
+    public UserResponseDto createUser(UserRequestDto dto) {
+        User user = userMapper.toEntity(dto);
+        User savedUser = userRepository.save(user);
+        return userMapper.toDto(savedUser);
     }
 
     @Override
-    public User getUserById(Long id) {
-        return userRepository.findById(id)
+    public UserResponseDto getUserById(Long id) {
+        User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("User not found"));
+        return userMapper.toDto(user);
     }
 
     @Override
-    public Page<User> getUsers(String firstName, String lastName, Pageable pageable) {
+    public Page<UserResponseDto> getUsers(String firstName, String lastName, Pageable pageable) {
         Specification<User> spec = null;
 
         if (firstName != null && !firstName.isBlank()) {
@@ -47,35 +54,44 @@ public class UserServiceImpl implements UserService {
                     : spec.and(UserSpecification.hasLastName(lastName));
         }
 
-        return userRepository.findAll(spec, pageable);
+        Page<User> users = userRepository.findAll(spec, pageable);
+        return users.map(userMapper::toDto);
     }
 
     @Override
-    public User updateUser(Long id, User user) {
-        User existing = getUserById(id);
-        existing.setName(user.getName());
-        existing.setSurname(user.getSurname());
-        existing.setEmail(user.getEmail());
-        existing.setBirthDate(user.getBirthDate());
-        return userRepository.save(existing);
+    @Transactional
+    public UserResponseDto updateUser(Long id, UserRequestDto dto) {
+        User existing = getUserEntityById(id);
+        existing.setName(dto.getName());
+        existing.setSurname(dto.getSurname());
+        existing.setEmail(dto.getEmail());
+        existing.setBirthDate(dto.getBirthDate());
+        return userMapper.toDto(userRepository.save(existing));
     }
 
     @Override
+    @Transactional
     public void activateUser(Long id) {
-        User user = getUserById(id);
+        User user = getUserEntityById(id);
         user.setActive(true);
         userRepository.save(user);
     }
 
     @Override
+    @Transactional
     public void deactivateUser(Long id) {
-        User user = getUserById(id);
+        User user = getUserEntityById(id);
         user.setActive(false);
         userRepository.save(user);
     }
 
     @Override
-    public Optional<User> getUserByEmail(String email) {
-        return userRepository.findByEmail(email);
+    public Optional<UserResponseDto> getUserByEmail(String email) {
+        return userRepository.findByEmail(email).map(userMapper::toDto);
+    }
+
+    private User getUserEntityById(Long id) {
+        return userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found"));
     }
 }

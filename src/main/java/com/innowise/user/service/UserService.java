@@ -1,5 +1,7 @@
 package com.innowise.user.service;
 
+import com.innowise.user.dto.user.UserRequestDto;
+import com.innowise.user.dto.user.UserResponseDto;
 import com.innowise.user.entity.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -8,18 +10,18 @@ import java.util.Optional;
 
 public interface UserService {
 
-    User createUser(User user);
+    UserResponseDto createUser(UserRequestDto dto);
 
-    User getUserById(Long id);
+    UserResponseDto getUserById(Long id);
 
-    Page<User> getUsers(String firstName, String lastName, Pageable pageable);
+    Page<UserResponseDto> getUsers(String firstName, String lastName, Pageable pageable);
 
-    User updateUser(Long id, User user);
+    UserResponseDto updateUser(Long id, UserRequestDto dto);
 
     void activateUser(Long id);
 
     void deactivateUser(Long id);
 
-    Optional<User> getUserByEmail(String email);
+    Optional<UserResponseDto> getUserByEmail(String email);
 
 }
