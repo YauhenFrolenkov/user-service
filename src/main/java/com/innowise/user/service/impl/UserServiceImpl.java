@@ -3,6 +3,7 @@ package com.innowise.user.service.impl;
 import com.innowise.user.dto.user.UserRequestDto;
 import com.innowise.user.dto.user.UserResponseDto;
 import com.innowise.user.entity.User;
+import com.innowise.user.exception.UserNotFoundException;
 import com.innowise.user.mapper.UserMapper;
 import com.innowise.user.repository.UserRepository;
 import com.innowise.user.service.UserService;
@@ -36,7 +37,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserResponseDto getUserById(Long id) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new UserNotFoundException(id));
         return userMapper.toDto(user);
     }
 
@@ -92,6 +93,6 @@ public class UserServiceImpl implements UserService {
 
     private User getUserEntityById(Long id) {
         return userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new UserNotFoundException(id));
     }
 }

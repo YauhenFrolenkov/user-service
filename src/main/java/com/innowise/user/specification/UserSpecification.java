@@ -8,12 +8,12 @@ public class UserSpecification {
     public static Specification<User> hasFirstName(String firstName) {
         return (root, query, criteriaBuilder) ->
                 firstName == null ? null :
-                        criteriaBuilder.equal(root.get("firstName"), firstName);
+                        criteriaBuilder.equal(root.get("name"), firstName);
     }
 
     public static Specification<User> hasLastName(String lastName) {
         return (root, query, criteriaBuilder) ->
                 lastName == null ? null :
-                        criteriaBuilder.equal(root.get("lastName"), lastName);
+                        criteriaBuilder.equal(root.get("surname"), lastName);
     }
 }

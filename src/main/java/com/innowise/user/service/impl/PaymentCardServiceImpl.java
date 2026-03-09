@@ -4,6 +4,9 @@ import com.innowise.user.dto.card.PaymentCardRequestDto;
 import com.innowise.user.dto.card.PaymentCardResponseDto;
 import com.innowise.user.entity.PaymentCard;
 import com.innowise.user.entity.User;
+import com.innowise.user.exception.MaxCardsExceededException;
+import com.innowise.user.exception.PaymentCardNotFoundException;
+import com.innowise.user.exception.UserNotFoundException;
 import com.innowise.user.mapper.PaymentCardMapper;
 import com.innowise.user.repository.PaymentCardRepository;
 import com.innowise.user.repository.UserRepository;
@@ -31,11 +34,11 @@ public class PaymentCardServiceImpl implements PaymentCardService {
     @Override
     public PaymentCardResponseDto createCard(PaymentCardRequestDto dto) {
         User user = userRepository.findById(dto.getUserId())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new UserNotFoundException(dto.getUserId()));
 
         int currentCards = paymentCardRepository.countByUserId(user.getId());
         if (currentCards >= 5) {
-            throw new IllegalStateException("User cannot have more than 5 cards");
+            throw new MaxCardsExceededException(user.getId());
         }
 
         PaymentCard card = paymentCardMapper.toEntity(dto);
@@ -97,12 +100,12 @@ public class PaymentCardServiceImpl implements PaymentCardService {
     @Override
     public PaymentCardResponseDto getCardByNumber(String number) {
         PaymentCard card = paymentCardRepository.findByNumberNative(number)
-                .orElseThrow(() -> new RuntimeException("Card not found"));
+                .orElseThrow(() -> new PaymentCardNotFoundException(number));
         return paymentCardMapper.toDto(card);
     }
 
     private PaymentCard getCardEntityById(Long id) {
         return paymentCardRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Payment card not found"));
+                .orElseThrow(() -> new PaymentCardNotFoundException(id));
     }
 }
