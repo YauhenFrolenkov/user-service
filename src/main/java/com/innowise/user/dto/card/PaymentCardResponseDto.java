@@ -1,8 +1,13 @@
 package com.innowise.user.dto.card;
 
+import java.io.Serial;
+import java.io.Serializable;
 import java.time.LocalDate;
 
-public class PaymentCardResponseDto {
+public class PaymentCardResponseDto implements Serializable {
+
+    @Serial
+    private static final long serialVersionUID = 1L;
 
     private Long id;
 

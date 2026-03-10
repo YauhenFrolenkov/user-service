@@ -11,6 +11,8 @@ import com.innowise.user.mapper.PaymentCardMapper;
 import com.innowise.user.repository.PaymentCardRepository;
 import com.innowise.user.repository.UserRepository;
 import com.innowise.user.service.PaymentCardService;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -32,6 +34,7 @@ public class PaymentCardServiceImpl implements PaymentCardService {
     }
 
     @Override
+    @CacheEvict(value = "cardsByUser", key = "#dto.userId")
     public PaymentCardResponseDto createCard(PaymentCardRequestDto dto) {
         User user = userRepository.findById(dto.getUserId())
                 .orElseThrow(() -> new UserNotFoundException(dto.getUserId()));
@@ -49,18 +52,21 @@ public class PaymentCardServiceImpl implements PaymentCardService {
     }
 
     @Override
+    @Cacheable(value = "cards", key = "#id")
     public PaymentCardResponseDto getCardById(Long id) {
         PaymentCard card = getCardEntityById(id);
         return paymentCardMapper.toDto(card);
     }
 
     @Override
+    @Cacheable(value = "cardsByUser", key = "#userId")
     public List<PaymentCardResponseDto> getCardsByUserId(Long userId) {
         return paymentCardRepository.findByUserId(userId).stream().map(paymentCardMapper::toDto).toList();
     }
 
     @Override
     @Transactional
+    @CacheEvict(value = {"cardsByUser", "cards"}, allEntries = true)
     public PaymentCardResponseDto updateCard(Long id, PaymentCardRequestDto dto) {
         PaymentCard existing = getCardEntityById(id);
         existing.setNumber(dto.getNumber());
@@ -73,6 +79,7 @@ public class PaymentCardServiceImpl implements PaymentCardService {
 
     @Override
     @Transactional
+    @CacheEvict(value = {"cardsByUser", "cards"}, allEntries = true)
     public void activateCard(Long id) {
         PaymentCard card = getCardEntityById(id);
         card.setActive(true);
@@ -81,6 +88,7 @@ public class PaymentCardServiceImpl implements PaymentCardService {
 
     @Override
     @Transactional
+    @CacheEvict(value = {"cardsByUser", "cards"}, allEntries = true)
     public void deactivateCard(Long id) {
         PaymentCard card = getCardEntityById(id);
         card.setActive(false);

@@ -8,6 +8,9 @@ import com.innowise.user.mapper.UserMapper;
 import com.innowise.user.repository.UserRepository;
 import com.innowise.user.service.UserService;
 import com.innowise.user.specification.UserSpecification;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -35,6 +38,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Cacheable(value = "users", key = "#id")
     public UserResponseDto getUserById(Long id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new UserNotFoundException(id));
@@ -61,6 +65,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
+    @CachePut(value = "users", key = "#id")
     public UserResponseDto updateUser(Long id, UserRequestDto dto) {
         User existing = getUserEntityById(id);
         existing.setName(dto.getName());
@@ -72,6 +77,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "users", key = "#id")
     public void activateUser(Long id) {
         User user = getUserEntityById(id);
         user.setActive(true);
@@ -80,6 +86,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "users", key = "#id")
     public void deactivateUser(Long id) {
         User user = getUserEntityById(id);
         user.setActive(false);

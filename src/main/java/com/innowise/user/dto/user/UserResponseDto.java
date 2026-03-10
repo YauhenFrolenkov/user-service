@@ -1,8 +1,13 @@
 package com.innowise.user.dto.user;
 
+import java.io.Serial;
+import java.io.Serializable;
 import java.time.LocalDate;
 
-public class UserResponseDto {
+public class UserResponseDto implements Serializable {
+
+    @Serial
+    private static final long serialVersionUID = 1L;
 
     private Long id;
 
