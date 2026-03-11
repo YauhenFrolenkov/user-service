@@ -1,0 +1,215 @@
+package com.innowise.user.controller;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.innowise.user.dto.card.PaymentCardRequestDto;
+import com.innowise.user.dto.card.PaymentCardResponseDto;
+import com.innowise.user.entity.User;
+import com.innowise.user.repository.PaymentCardRepository;
+import com.innowise.user.repository.UserRepository;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.MediaType;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.web.servlet.MockMvc;
+import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+
+import java.time.LocalDate;
+
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+@SpringBootTest
+@AutoConfigureMockMvc
+@Testcontainers
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+public class PaymentCardControllerIT {
+
+    @Container
+    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:15")
+            .withDatabaseName("testdb")
+            .withUsername("user")
+            .withPassword("password");
+
+    @DynamicPropertySource
+    static void configureProperties(DynamicPropertyRegistry registry) {
+        registry.add("spring.datasource.url", postgres::getJdbcUrl);
+        registry.add("spring.datasource.username", postgres::getUsername);
+        registry.add("spring.datasource.password", postgres::getPassword);
+    }
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private PaymentCardRepository paymentCardRepository;
+
+    private PaymentCardRequestDto cardRequestDto;
+
+    @BeforeEach
+    void setUp() {
+
+        paymentCardRepository.deleteAll();
+        userRepository.deleteAll();
+
+        cardRequestDto = new PaymentCardRequestDto();
+        cardRequestDto.setNumber("1111222233334444");
+        cardRequestDto.setHolder("Yauhen Fraliankou");
+        cardRequestDto.setExpirationDate(LocalDate.of(2030, 12, 31));
+    }
+
+    private User createUser() {
+        User user = new User();
+        user.setName("Yauhen");
+        user.setSurname("Fraliankou");
+        user.setEmail("yauhen@example.com");
+        user.setActive(true);
+
+        return userRepository.save(user);
+    }
+
+    private PaymentCardResponseDto createCard(User user) throws Exception {
+
+        cardRequestDto.setUserId(user.getId());
+
+        String jsonRequest = objectMapper.writeValueAsString(cardRequestDto);
+
+        String content = mockMvc.perform(post("/cards")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonRequest))
+                .andExpect(status().isCreated())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        return objectMapper.readValue(content, PaymentCardResponseDto.class);
+    }
+
+    @Test
+    void testCreateCard() throws Exception {
+        User savedUser = createUser();
+        cardRequestDto.setUserId(savedUser.getId());
+
+        String jsonRequest = objectMapper.writeValueAsString(cardRequestDto);
+
+        mockMvc.perform(post("/cards")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonRequest))
+                .andExpect(status().isCreated())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.number").value("1111222233334444"))
+                .andExpect(jsonPath("$.holder").value("Yauhen Fraliankou"));
+    }
+
+    @Test
+    void testGetCardById() throws Exception {
+
+        User savedUser = createUser();
+        PaymentCardResponseDto createdCard = createCard(savedUser);
+
+        mockMvc.perform(get("/cards/{id}", createdCard.getId()))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.id").value(createdCard.getId()))
+                .andExpect(jsonPath("$.number").value("1111222233334444"));
+    }
+
+    @Test
+    void testGetCardsByUserId() throws Exception {
+
+        User savedUser = createUser();
+        createCard(savedUser);
+
+        mockMvc.perform(get("/cards/user/{userId}", savedUser.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].holder").value("Yauhen Fraliankou"));
+    }
+
+    @Test
+    void testUpdateCard() throws Exception {
+
+        User savedUser = createUser();
+        PaymentCardResponseDto createdCard = createCard(savedUser);
+
+        PaymentCardRequestDto updatedDto = new PaymentCardRequestDto();
+        updatedDto.setNumber("9999888877776666");
+        updatedDto.setHolder("Updated Holder");
+        updatedDto.setExpirationDate(LocalDate.of(2031, 12, 31));
+        updatedDto.setUserId(savedUser.getId());
+
+        String updateJson = objectMapper.writeValueAsString(updatedDto);
+
+        mockMvc.perform(put("/cards/{id}", createdCard.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(updateJson))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.holder").value("Updated Holder"));
+
+    }
+
+    @Test
+    void testActivateDeactivateCard() throws Exception {
+
+        User savedUser = createUser();
+        PaymentCardResponseDto createdCard = createCard(savedUser);
+
+        mockMvc.perform(patch("/cards/{id}/deactivate", createdCard.getId()))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(patch("/cards/{id}/activate", createdCard.getId()))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void testGetAllCards() throws Exception {
+
+        User savedUser = createUser();
+        createCard(savedUser);
+
+        mockMvc.perform(get("/cards")
+                        .param("page", "0")
+                        .param("size", "10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].number").value("1111222233334444"));
+    }
+
+    @Test
+    void testGetAllActiveCards() throws Exception {
+
+        User savedUser = createUser();
+        createCard(savedUser);
+
+        mockMvc.perform(get("/cards/active"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].number").value("1111222233334444"));
+    }
+
+    @Test
+    void testGetCardByNumber() throws Exception {
+
+        User savedUser = createUser();
+        PaymentCardResponseDto createdCard = createCard(savedUser);
+
+        mockMvc.perform(get("/cards/number")
+                        .param("number", createdCard.getNumber()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.number").value(createdCard.getNumber()));
+    }
+
+}
