@@ -1,6 +1,7 @@
 package com.innowise.user.entity;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.Where;
 
 import java.io.Serial;
 import java.io.Serializable;
@@ -11,6 +12,7 @@ import java.util.List;
 
 @Entity
 @Table(name = "users")
+@Where(clause = "active = true")
 public class User implements Serializable {
 
     @Serial

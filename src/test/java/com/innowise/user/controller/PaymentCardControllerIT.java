@@ -118,6 +118,25 @@ public class PaymentCardControllerIT {
     }
 
     @Test
+    void testCreateSixthCard_ShouldReturnError() throws Exception {
+        User savedUser = createUser();
+
+        for (int i = 0; i < 5; i++) {
+            createCard(savedUser);
+        }
+
+        cardRequestDto.setUserId(savedUser.getId());
+        cardRequestDto.setNumber("6666777788889999");
+        String jsonRequest = objectMapper.writeValueAsString(cardRequestDto);
+
+        mockMvc.perform(post("/cards")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonRequest))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.message").value("User " + savedUser.getId() + " cannot have more than 5 cards"));
+    }
+
+    @Test
     void testGetCardById() throws Exception {
 
         User savedUser = createUser();

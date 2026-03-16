@@ -13,6 +13,7 @@ import com.innowise.user.repository.UserRepository;
 import com.innowise.user.service.PaymentCardService;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -34,7 +35,11 @@ public class PaymentCardServiceImpl implements PaymentCardService {
     }
 
     @Override
-    @CacheEvict(value = "cardsByUser", key = "#dto.userId")
+    @Transactional
+    @Caching(evict = {
+            @CacheEvict(value = "users", key = "#dto.userId"),
+            @CacheEvict(value = "cardsByUser", key = "#dto.userId")
+    })
     public PaymentCardResponseDto createCard(PaymentCardRequestDto dto) {
         User user = userRepository.findById(dto.getUserId())
                 .orElseThrow(() -> new UserNotFoundException(dto.getUserId()));
