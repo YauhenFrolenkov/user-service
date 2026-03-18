@@ -41,10 +41,10 @@ public class PaymentCardServiceImpl implements PaymentCardService {
             @CacheEvict(value = "cardsByUser", key = "#dto.userId")
     })
     public PaymentCardResponseDto createCard(PaymentCardRequestDto dto) {
-        User user = userRepository.findById(dto.getUserId())
+        User user = userRepository.findByIdForUpdate(dto.getUserId())
                 .orElseThrow(() -> new UserNotFoundException(dto.getUserId()));
 
-        int currentCards = paymentCardRepository.countByUserId(user.getId());
+        int currentCards = paymentCardRepository.countByUserIdAndActiveTrue(user.getId());
         if (currentCards >= 5) {
             throw new MaxCardsExceededException(user.getId());
         }
@@ -71,7 +71,11 @@ public class PaymentCardServiceImpl implements PaymentCardService {
 
     @Override
     @Transactional
-    @CacheEvict(value = {"cardsByUser", "cards"}, allEntries = true)
+    @Caching(evict = {
+            @CacheEvict(value = "users", key = "#result.userId"),
+            @CacheEvict(value = "cardsByUser", key = "#result.userId"),
+            @CacheEvict(value = "cards", key = "#id")
+    })
     public PaymentCardResponseDto updateCard(Long id, PaymentCardRequestDto dto) {
         PaymentCard existing = getCardEntityById(id);
         existing.setNumber(dto.getNumber());
@@ -84,7 +88,11 @@ public class PaymentCardServiceImpl implements PaymentCardService {
 
     @Override
     @Transactional
-    @CacheEvict(value = {"cardsByUser", "cards"}, allEntries = true)
+    @Caching(evict = {
+            @CacheEvict(value = "users", allEntries = true),
+            @CacheEvict(value = "cardsByUser", allEntries = true),
+            @CacheEvict(value = "cards", key = "#id")
+    })
     public void activateCard(Long id) {
         PaymentCard card = getCardEntityById(id);
         card.setActive(true);
@@ -93,7 +101,11 @@ public class PaymentCardServiceImpl implements PaymentCardService {
 
     @Override
     @Transactional
-    @CacheEvict(value = {"cardsByUser", "cards"}, allEntries = true)
+    @Caching(evict = {
+            @CacheEvict(value = "users", allEntries = true),
+            @CacheEvict(value = "cardsByUser", allEntries = true),
+            @CacheEvict(value = "cards", key = "#id")
+    })
     public void deactivateCard(Long id) {
         PaymentCard card = getCardEntityById(id);
         card.setActive(false);
@@ -118,7 +130,7 @@ public class PaymentCardServiceImpl implements PaymentCardService {
     }
 
     private PaymentCard getCardEntityById(Long id) {
-        return paymentCardRepository.findById(id)
+        return paymentCardRepository.findByIdIncludingInactive(id)
                 .orElseThrow(() -> new PaymentCardNotFoundException(id));
     }
 }

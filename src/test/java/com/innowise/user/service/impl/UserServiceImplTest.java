@@ -5,6 +5,7 @@ import com.innowise.user.dto.user.UserResponseDto;
 import com.innowise.user.entity.User;
 import com.innowise.user.exception.UserNotFoundException;
 import com.innowise.user.mapper.UserMapper;
+import com.innowise.user.repository.PaymentCardRepository;
 import com.innowise.user.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,6 +36,9 @@ public class UserServiceImplTest {
     @Mock
     private UserMapper userMapper;
 
+    @Mock
+    private PaymentCardRepository paymentCardRepository;
+
     @InjectMocks
     private UserServiceImpl userService;
 
@@ -63,7 +67,7 @@ public class UserServiceImplTest {
 
     @Test
     void testGetUserById_Success() {
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userRepository.findWithCardsById(1L)).thenReturn(Optional.of(user));
         when(userMapper.toDto(user)).thenReturn(userResponseDto);
 
         UserResponseDto result = userService.getUserById(1L);
@@ -73,20 +77,20 @@ public class UserServiceImplTest {
         assertEquals("Yauhen", result.getName());
         assertEquals("yauhen@example.com", result.getEmail());
 
-        verify(userRepository, times(1)).findById(1L);
+        verify(userRepository, times(1)).findWithCardsById(1L);
         verify(userMapper, times(1)).toDto(user);
     }
 
     @Test
     void testGetUserById_NotFound() {
 
-        when(userRepository.findById(1L)).thenReturn(Optional.empty());
+        when(userRepository.findWithCardsById(1L)).thenReturn(Optional.empty());
 
         UserNotFoundException exception =
                 assertThrows(UserNotFoundException.class,
                         () -> userService.getUserById(1L));
 
-        verify(userRepository, times(1)).findById(1L);
+        verify(userRepository, times(1)).findWithCardsById(1L);
         verify(userMapper, never()).toDto(any());
     }
 
@@ -148,7 +152,7 @@ public class UserServiceImplTest {
     @Test
     void testUpdateUser_Success() {
 
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userRepository.findByIdIncludingInactive(1L)).thenReturn(Optional.of(user));
 
         when(userRepository.save(user)).thenReturn(user);
 
@@ -160,7 +164,7 @@ public class UserServiceImplTest {
         assertEquals("Yauhen", result.getName());
 
         verify(userRepository, times(1))
-                .findById(1L);
+                .findByIdIncludingInactive(1L);
 
         verify(userRepository, times(1))
                 .save(user);
@@ -172,7 +176,7 @@ public class UserServiceImplTest {
     @Test
     void testActivateUser_Success() {
 
-        when(userRepository.findById(1L))
+        when(userRepository.findByIdIncludingInactive(1L))
                 .thenReturn(Optional.of(user));
 
         userService.activateUser(1L);
@@ -180,16 +184,19 @@ public class UserServiceImplTest {
         assertTrue(user.getActive());
 
         verify(userRepository, times(1))
-                .findById(1L);
+                .findByIdIncludingInactive(1L);
 
         verify(userRepository, times(1))
                 .save(user);
+
+        verify(paymentCardRepository, times(1))
+                .activateCardsByUserId(1L);
     }
 
     @Test
     void testDeactivateUser_Success() {
 
-        when(userRepository.findById(1L))
+        when(userRepository.findByIdIncludingInactive(1L))
                 .thenReturn(Optional.of(user));
 
         userService.deactivateUser(1L);
@@ -197,10 +204,13 @@ public class UserServiceImplTest {
         assertFalse(user.getActive());
 
         verify(userRepository, times(1))
-                .findById(1L);
+                .findByIdIncludingInactive(1L);
 
         verify(userRepository, times(1))
                 .save(user);
+
+        verify(paymentCardRepository, times(1))
+                .deactivateCardsByUserId(1L);
     }
 
     @Test

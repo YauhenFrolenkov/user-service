@@ -1,8 +1,11 @@
 package com.innowise.user.dto.user;
 
+import com.innowise.user.dto.card.PaymentCardResponseDto;
+
 import java.io.Serial;
 import java.io.Serializable;
 import java.time.LocalDate;
+import java.util.List;
 
 public class UserResponseDto implements Serializable {
 
@@ -20,6 +23,8 @@ public class UserResponseDto implements Serializable {
     private String email;
 
     private Boolean active;
+
+    private List<PaymentCardResponseDto> cards;
 
     public UserResponseDto() {
     }
@@ -70,5 +75,13 @@ public class UserResponseDto implements Serializable {
 
     public void setEmail(String email) {
         this.email = email;
+    }
+
+    public List<PaymentCardResponseDto> getCards() {
+        return cards;
+    }
+
+    public void setCards(List<PaymentCardResponseDto> cards) {
+        this.cards = cards;
     }
 }

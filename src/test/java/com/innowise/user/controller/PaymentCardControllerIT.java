@@ -114,7 +114,8 @@ public class PaymentCardControllerIT {
                 .andExpect(status().isCreated())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.number").value("1111222233334444"))
-                .andExpect(jsonPath("$.holder").value("Yauhen Fraliankou"));
+                .andExpect(jsonPath("$.holder").value("Yauhen Fraliankou"))
+                .andExpect(jsonPath("$.userId").value(savedUser.getId()));
     }
 
     @Test
@@ -138,7 +139,6 @@ public class PaymentCardControllerIT {
 
     @Test
     void testGetCardById() throws Exception {
-
         User savedUser = createUser();
         PaymentCardResponseDto createdCard = createCard(savedUser);
 
@@ -146,23 +146,23 @@ public class PaymentCardControllerIT {
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.id").value(createdCard.getId()))
-                .andExpect(jsonPath("$.number").value("1111222233334444"));
+                .andExpect(jsonPath("$.number").value("1111222233334444"))
+                .andExpect(jsonPath("$.userId").value(savedUser.getId()));
     }
 
     @Test
     void testGetCardsByUserId() throws Exception {
-
         User savedUser = createUser();
         createCard(savedUser);
 
         mockMvc.perform(get("/cards/user/{userId}", savedUser.getId()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].holder").value("Yauhen Fraliankou"));
+                .andExpect(jsonPath("$[0].holder").value("Yauhen Fraliankou"))
+                .andExpect(jsonPath("$[0].userId").value(savedUser.getId()));
     }
 
     @Test
     void testUpdateCard() throws Exception {
-
         User savedUser = createUser();
         PaymentCardResponseDto createdCard = createCard(savedUser);
 
@@ -179,12 +179,10 @@ public class PaymentCardControllerIT {
                         .content(updateJson))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.holder").value("Updated Holder"));
-
     }
 
     @Test
     void testActivateDeactivateCard() throws Exception {
-
         User savedUser = createUser();
         PaymentCardResponseDto createdCard = createCard(savedUser);
 
@@ -197,7 +195,6 @@ public class PaymentCardControllerIT {
 
     @Test
     void testGetAllCards() throws Exception {
-
         User savedUser = createUser();
         createCard(savedUser);
 
@@ -205,30 +202,30 @@ public class PaymentCardControllerIT {
                         .param("page", "0")
                         .param("size", "10"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content[0].number").value("1111222233334444"));
+                .andExpect(jsonPath("$.content[0].number").value("1111222233334444"))
+                .andExpect(jsonPath("$.content[0].userId").value(savedUser.getId()));
     }
 
     @Test
     void testGetAllActiveCards() throws Exception {
-
         User savedUser = createUser();
         createCard(savedUser);
 
         mockMvc.perform(get("/cards/active"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].number").value("1111222233334444"));
+                .andExpect(jsonPath("$[0].number").value("1111222233334444"))
+                .andExpect(jsonPath("$[0].userId").value(savedUser.getId()));
     }
 
     @Test
     void testGetCardByNumber() throws Exception {
-
         User savedUser = createUser();
         PaymentCardResponseDto createdCard = createCard(savedUser);
 
         mockMvc.perform(get("/cards/number")
                         .param("number", createdCard.getNumber()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.number").value(createdCard.getNumber()));
+                .andExpect(jsonPath("$.number").value(createdCard.getNumber()))
+                .andExpect(jsonPath("$.userId").value(savedUser.getId()));
     }
-
 }

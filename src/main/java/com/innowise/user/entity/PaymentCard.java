@@ -1,6 +1,7 @@
 package com.innowise.user.entity;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.Where;
 
 import java.io.Serial;
 import java.io.Serializable;
@@ -9,6 +10,7 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "payment_cards")
+@Where(clause = "active = true")
 public class PaymentCard implements Serializable {
 
     @Serial

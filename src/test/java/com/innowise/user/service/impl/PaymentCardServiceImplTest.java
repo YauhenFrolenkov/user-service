@@ -78,8 +78,8 @@ public class PaymentCardServiceImplTest {
 
     @Test
     void testCreateCard_Success() {
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-        when(paymentCardRepository.countByUserId(1L)).thenReturn(0);
+        when(userRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(user));
+        when(paymentCardRepository.countByUserIdAndActiveTrue(1L)).thenReturn(0);
         when(paymentCardMapper.toEntity(cardRequestDto)).thenReturn(card);
         when(paymentCardRepository.save(card)).thenReturn(card);
         when(paymentCardMapper.toDto(card)).thenReturn(cardResponseDto);
@@ -94,8 +94,8 @@ public class PaymentCardServiceImplTest {
 
     @Test
     void testCreateCard_MaxCardsExceeded() {
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-        when(paymentCardRepository.countByUserId(1L)).thenReturn(5);
+        when(userRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(user));
+        when(paymentCardRepository.countByUserIdAndActiveTrue(1L)).thenReturn(5);
 
         assertThrows(MaxCardsExceededException.class,
                 () -> paymentCardService.createCard(cardRequestDto));
@@ -103,14 +103,14 @@ public class PaymentCardServiceImplTest {
 
     @Test
     void testGetCardById_Success() {
-        when(paymentCardRepository.findById(1L)).thenReturn(Optional.of(card));
+        when(paymentCardRepository.findByIdIncludingInactive(1L)).thenReturn(Optional.of(card));
         when(paymentCardMapper.toDto(card)).thenReturn(cardResponseDto);
 
         PaymentCardResponseDto result = paymentCardService.getCardById(1L);
 
         assertNotNull(result);
         assertEquals(1L, result.getId());
-        verify(paymentCardRepository, times(1)).findById(1L);
+        verify(paymentCardRepository, times(1)).findByIdIncludingInactive(1L);
     }
 
     @Test
@@ -132,7 +132,7 @@ public class PaymentCardServiceImplTest {
         updateDto.setExpirationDate(LocalDate.of(2031, 1, 31));
         updateDto.setUserId(1L);
 
-        when(paymentCardRepository.findById(1L)).thenReturn(Optional.of(card));
+        when(paymentCardRepository.findByIdIncludingInactive(1L)).thenReturn(Optional.of(card));
         when(paymentCardRepository.save(card)).thenReturn(card);
         when(paymentCardMapper.toDto(card)).thenReturn(cardResponseDto);
 
@@ -150,7 +150,7 @@ public class PaymentCardServiceImplTest {
     void testActivateDeactivateCard() {
 
         card.setActive(false);
-        when(paymentCardRepository.findById(1L)).thenReturn(Optional.of(card));
+        when(paymentCardRepository.findByIdIncludingInactive(1L)).thenReturn(Optional.of(card));
         paymentCardService.activateCard(1L);
         assertTrue(card.getActive());
         verify(paymentCardRepository, times(1)).save(card);

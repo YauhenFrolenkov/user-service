@@ -91,6 +91,7 @@ public class UserControllerIT {
                 .andExpect(jsonPath("$.surname").value("Fraliankou"))
                 .andExpect(jsonPath("$.email").value("yauhen@example.com"))
                 .andExpect(jsonPath("$.active").value(true));
+
     }
 
     @Test
@@ -103,7 +104,8 @@ public class UserControllerIT {
                 .andExpect(jsonPath("$.name").value("Yauhen"))
                 .andExpect(jsonPath("$.surname").value("Fraliankou"))
                 .andExpect(jsonPath("$.email").value("yauhen@example.com"))
-                .andExpect(jsonPath("$.active").value(true));
+                .andExpect(jsonPath("$.active").value(true))
+                .andExpect(jsonPath("$.cards").isArray());
     }
 
     @Test
@@ -115,8 +117,10 @@ public class UserControllerIT {
                         .param("size", "10"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isArray())
-                .andExpect(jsonPath("$.content[0].name").value("Yauhen"));
+                .andExpect(jsonPath("$.content[0].name").value("Yauhen"))
+                .andExpect(jsonPath("$.content[0].cards").isArray());
     }
+
 
     @Test
     void testUpdateUser() throws Exception {
@@ -146,12 +150,13 @@ public class UserControllerIT {
                 .andExpect(status().isNoContent());
 
         mockMvc.perform(get("/users/{id}", createdUser.getId()))
-                .andExpect(jsonPath("$.active").value(false));
+                .andExpect(status().isNotFound());
 
         mockMvc.perform(patch("/users/{id}/activate", createdUser.getId()))
                 .andExpect(status().isNoContent());
 
         mockMvc.perform(get("/users/{id}", createdUser.getId()))
+                .andExpect(status().isOk())
                 .andExpect(jsonPath("$.active").value(true));
     }
 
