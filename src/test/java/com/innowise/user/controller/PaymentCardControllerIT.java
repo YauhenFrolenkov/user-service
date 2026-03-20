@@ -20,6 +20,7 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import java.time.Duration;
 import java.time.LocalDate;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -39,7 +40,9 @@ class PaymentCardControllerIT {
     static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:15")
             .withDatabaseName("testdb")
             .withUsername("user")
-            .withPassword("password");
+            .withPassword("password")
+            .withReuse(true)
+            .withStartupTimeout(Duration.ofSeconds(60));
 
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {
