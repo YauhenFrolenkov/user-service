@@ -36,9 +36,7 @@ class UserControllerIT {
     static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:15")
             .withDatabaseName("testdb")
             .withUsername("user")
-            .withPassword("password")
-            .withReuse(true)
-            .withStartupTimeout(Duration.ofSeconds(60));
+            .withPassword("password");            ;
 
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {
