@@ -155,8 +155,8 @@
 						<configuration>
 							<outputDirectory>${project.build.directory}/jacoco-report</outputDirectory>
 							<formats>
-								<format>xml</format>
-								<format>html</format>
+								<format>XML</format>
+								<format>HTML</format>
 							</formats>
 						</configuration>
 					</execution>
