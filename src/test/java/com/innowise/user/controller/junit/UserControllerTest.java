@@ -43,9 +43,6 @@ class UserControllerTest {
     private UserRequestDto userRequestDto;
     private UserResponseDto userResponseDto;
 
-    private final ObjectMapper objectMapper = new ObjectMapper()
-            .registerModule(new JavaTimeModule());
-
     @TestConfiguration
     static class Config {
         @Bean
