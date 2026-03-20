@@ -1,5 +1,6 @@
 package com.innowise.user.service.impl;
 
+import com.innowise.user.dto.card.PaymentCardResponseDto;
 import com.innowise.user.dto.user.UserRequestDto;
 import com.innowise.user.dto.user.UserResponseDto;
 import com.innowise.user.entity.User;
@@ -47,25 +48,23 @@ public class UserServiceImpl implements UserService {
     public UserResponseDto getUserById(Long id) {
         User user = userRepository.findWithCardsById(id)
                 .orElseThrow(() -> new UserNotFoundException(id));
-        return userMapper.toDto(user);
+        return mapUserWithActiveCards(user);
     }
 
     @Override
     public Page<UserResponseDto> getUsers(String firstName, String lastName, Pageable pageable) {
-        Specification<User> spec = null;
+        Specification<User> spec = UserSpecification.isActive();
 
         if (firstName != null && !firstName.isBlank()) {
-            spec = UserSpecification.hasFirstName(firstName);
+            spec = spec.and(UserSpecification.hasFirstName(firstName));
         }
 
         if (lastName != null && !lastName.isBlank()) {
-            spec = (spec == null)
-                    ? UserSpecification.hasLastName(lastName)
-                    : spec.and(UserSpecification.hasLastName(lastName));
+            spec = spec.and(UserSpecification.hasLastName(lastName));
         }
 
         Page<User> users = userRepository.findAll(spec, pageable);
-        return users.map(userMapper::toDto);
+        return users.map(this::mapUserWithActiveCards);
     }
 
     @Override
@@ -112,11 +111,23 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public Optional<UserResponseDto> getUserByEmail(String email) {
-        return userRepository.findByEmail(email).map(userMapper::toDto);
+        return userRepository.findByEmail(email).filter(User::getActive).map(userMapper::toDto);
     }
 
     private User getUserEntityById(Long id) {
         return userRepository.findByIdIncludingInactive(id)
                 .orElseThrow(() -> new UserNotFoundException(id));
+    }
+
+    private UserResponseDto mapUserWithActiveCards(User user) {
+        UserResponseDto dto = userMapper.toDto(user);
+
+        if (dto.getCards() != null) {
+            dto.setCards(dto.getCards().stream()
+                    .filter(PaymentCardResponseDto::getActive)
+                    .toList());
+        }
+
+        return dto;
     }
 }

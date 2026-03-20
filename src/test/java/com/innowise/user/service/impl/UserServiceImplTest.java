@@ -20,6 +20,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -28,7 +29,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-public class UserServiceImplTest {
+class UserServiceImplTest {
 
     @Mock
     private UserRepository userRepository;
@@ -86,9 +87,8 @@ public class UserServiceImplTest {
 
         when(userRepository.findWithCardsById(1L)).thenReturn(Optional.empty());
 
-        UserNotFoundException exception =
-                assertThrows(UserNotFoundException.class,
-                        () -> userService.getUserById(1L));
+        assertThrows(UserNotFoundException.class,
+                () -> userService.getUserById(1L));
 
         verify(userRepository, times(1)).findWithCardsById(1L);
         verify(userMapper, never()).toDto(any());
@@ -219,7 +219,7 @@ public class UserServiceImplTest {
         Page<User> userPage = new PageImpl<>(List.of(user));
 
         when(userRepository.findAll(
-                ArgumentMatchers.<Specification<User>>isNull(),
+                ArgumentMatchers.<Specification<User>>any(),
                 any(Pageable.class)))
                 .thenReturn(userPage);
 
@@ -234,8 +234,37 @@ public class UserServiceImplTest {
 
         verify(userRepository, times(1))
                 .findAll(
-                        ArgumentMatchers.<Specification<User>>isNull(),
+                        ArgumentMatchers.<Specification<User>>any(),
                         any(Pageable.class));
+    }
+
+    @Test
+    void testUpdateUser_NotFound() {
+        when(userRepository.findByIdIncludingInactive(1L)).thenReturn(Optional.empty());
+
+        assertThrows(UserNotFoundException.class, () ->
+                userService.updateUser(1L, userRequestDto));
+    }
+
+    @Test
+    void testActivateUser_NotFound() {
+        when(userRepository.findByIdIncludingInactive(1L)).thenReturn(Optional.empty());
+        assertThrows(UserNotFoundException.class, () -> userService.activateUser(1L));
+    }
+
+    @Test
+    void testDeactivateUser_NotFound() {
+        when(userRepository.findByIdIncludingInactive(1L)).thenReturn(Optional.empty());
+        assertThrows(UserNotFoundException.class, () -> userService.deactivateUser(1L));
+    }
+
+    @Test
+    void testGetUsers_Empty() {
+        Page<User> emptyPage = new PageImpl<>(Collections.emptyList());
+        when(userRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(emptyPage);
+
+        Page<UserResponseDto> result = userService.getUsers(null, null, PageRequest.of(0, 10));
+        assertTrue(result.isEmpty());
     }
 
 }

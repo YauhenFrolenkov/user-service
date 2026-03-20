@@ -11,7 +11,7 @@ import java.util.Optional;
 
 public interface PaymentCardRepository extends JpaRepository<PaymentCard, Long> {
 
-    List<PaymentCard> findByUserId(Long userId);
+    List<PaymentCard> findByUserIdAndActiveTrue(Long userId);
 
     @Query("SELECT c FROM PaymentCard c WHERE c.active = true")
     List<PaymentCard> findAllActiveCards();

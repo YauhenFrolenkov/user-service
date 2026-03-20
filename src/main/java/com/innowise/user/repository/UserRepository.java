@@ -18,6 +18,7 @@ public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificat
     Page<User> findAll(Specification<User> spec, Pageable pageable);
 
     @EntityGraph(attributePaths = "cards")
+    @Query("SELECT u FROM User u WHERE u.id = :id AND u.active = true")
     Optional<User> findWithCardsById(Long id);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)

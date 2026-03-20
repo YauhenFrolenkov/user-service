@@ -2,7 +2,6 @@ package com.innowise.user.service;
 
 import com.innowise.user.dto.user.UserRequestDto;
 import com.innowise.user.dto.user.UserResponseDto;
-import com.innowise.user.entity.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 

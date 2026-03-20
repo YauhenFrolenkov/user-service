@@ -5,6 +5,7 @@ import com.innowise.user.dto.card.PaymentCardResponseDto;
 import com.innowise.user.entity.PaymentCard;
 import com.innowise.user.entity.User;
 import com.innowise.user.exception.MaxCardsExceededException;
+import com.innowise.user.exception.PaymentCardNotFoundException;
 import com.innowise.user.mapper.PaymentCardMapper;
 import com.innowise.user.repository.PaymentCardRepository;
 import com.innowise.user.repository.UserRepository;
@@ -19,6 +20,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 
 import java.time.LocalDate;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -114,14 +116,31 @@ public class PaymentCardServiceImplTest {
     }
 
     @Test
+    void testGetCardById_NotFound() {
+        when(paymentCardRepository.findByIdIncludingInactive(1L)).thenReturn(Optional.empty());
+
+        assertThrows(PaymentCardNotFoundException.class,
+                () -> paymentCardService.getCardById(1L));
+    }
+
+    @Test
     void testGetCardsByUserId_Success() {
-        when(paymentCardRepository.findByUserId(1L)).thenReturn(List.of(card));
+        when(paymentCardRepository.findByUserIdAndActiveTrue(1L)).thenReturn(List.of(card));
         when(paymentCardMapper.toDto(card)).thenReturn(cardResponseDto);
 
         List<PaymentCardResponseDto> result = paymentCardService.getCardsByUserId(1L);
 
         assertEquals(1, result.size());
-        verify(paymentCardRepository, times(1)).findByUserId(1L);
+        verify(paymentCardRepository, times(1)).findByUserIdAndActiveTrue(1L);
+    }
+
+    @Test
+    void testGetCardsByUserId_Empty() {
+        when(paymentCardRepository.findByUserIdAndActiveTrue(1L)).thenReturn(Collections.emptyList());
+
+        List<PaymentCardResponseDto> result = paymentCardService.getCardsByUserId(1L);
+
+        assertTrue(result.isEmpty());
     }
 
     @Test
@@ -147,6 +166,15 @@ public class PaymentCardServiceImplTest {
     }
 
     @Test
+    void testUpdateCard_NotFound() {
+        when(paymentCardRepository.findByIdIncludingInactive(1L)).thenReturn(Optional.empty());
+
+        PaymentCardRequestDto dto = new PaymentCardRequestDto();
+        assertThrows(PaymentCardNotFoundException.class,
+                () -> paymentCardService.updateCard(1L, dto));
+    }
+
+    @Test
     void testActivateDeactivateCard() {
 
         card.setActive(false);
@@ -161,6 +189,18 @@ public class PaymentCardServiceImplTest {
     }
 
     @Test
+    void testActivateCard_NotFound() {
+        when(paymentCardRepository.findByIdIncludingInactive(1L)).thenReturn(Optional.empty());
+        assertThrows(PaymentCardNotFoundException.class, () -> paymentCardService.activateCard(1L));
+    }
+
+    @Test
+    void testDeactivateCard_NotFound() {
+        when(paymentCardRepository.findByIdIncludingInactive(1L)).thenReturn(Optional.empty());
+        assertThrows(PaymentCardNotFoundException.class, () -> paymentCardService.deactivateCard(1L));
+    }
+
+    @Test
     void testGetAllCards() {
         Page<PaymentCard> page = new PageImpl<>(List.of(card));
         when(paymentCardRepository.findAll(PageRequest.of(0, 10))).thenReturn(page);
@@ -169,6 +209,15 @@ public class PaymentCardServiceImplTest {
         Page<PaymentCardResponseDto> result = paymentCardService.getAllCards(PageRequest.of(0, 10));
 
         assertEquals(1, result.getTotalElements());
+    }
+
+    @Test
+    void testGetAllCards_Empty() {
+        Page<PaymentCard> emptyPage = new PageImpl<>(Collections.emptyList());
+        when(paymentCardRepository.findAll(PageRequest.of(0, 10))).thenReturn(emptyPage);
+
+        Page<PaymentCardResponseDto> result = paymentCardService.getAllCards(PageRequest.of(0, 10));
+        assertTrue(result.isEmpty());
     }
 
     @Test
@@ -183,6 +232,13 @@ public class PaymentCardServiceImplTest {
     }
 
     @Test
+    void testGetAllActiveCards_Empty() {
+        when(paymentCardRepository.findAllActiveCards()).thenReturn(Collections.emptyList());
+        List<PaymentCardResponseDto> result = paymentCardService.getAllActiveCards();
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
     void testGetCardByNumber_Success() {
         when(paymentCardRepository.findByNumberNative("1234-5678-9012-3456")).thenReturn(Optional.of(card));
         when(paymentCardMapper.toDto(card)).thenReturn(cardResponseDto);
@@ -191,6 +247,13 @@ public class PaymentCardServiceImplTest {
 
         assertNotNull(result);
         assertEquals("1234-5678-9012-3456", result.getNumber());
+    }
+
+    @Test
+    void testGetCardByNumber_NotFound() {
+        when(paymentCardRepository.findByNumberNative("0000")).thenReturn(Optional.empty());
+        assertThrows(PaymentCardNotFoundException.class,
+                () -> paymentCardService.getCardByNumber("0000"));
     }
 
 }

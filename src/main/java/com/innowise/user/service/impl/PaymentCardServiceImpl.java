@@ -66,7 +66,7 @@ public class PaymentCardServiceImpl implements PaymentCardService {
     @Override
     @Cacheable(value = "cardsByUser", key = "#userId")
     public List<PaymentCardResponseDto> getCardsByUserId(Long userId) {
-        return paymentCardRepository.findByUserId(userId).stream().map(paymentCardMapper::toDto).toList();
+        return paymentCardRepository.findByUserIdAndActiveTrue(userId).stream().map(paymentCardMapper::toDto).toList();
     }
 
     @Override

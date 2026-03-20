@@ -10,7 +10,6 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "payment_cards")
-@Where(clause = "active = true")
 public class PaymentCard implements Serializable {
 
     @Serial

@@ -1,7 +1,6 @@
 package com.innowise.user.entity;
 
 import jakarta.persistence.*;
-import org.hibernate.annotations.Where;
 
 import java.io.Serial;
 import java.io.Serializable;
@@ -12,7 +11,6 @@ import java.util.List;
 
 @Entity
 @Table(name = "users")
-@Where(clause = "active = true")
 public class User implements Serializable {
 
     @Serial
@@ -50,7 +48,7 @@ public class User implements Serializable {
     public User() {
     }
 
-    public User(String name, String surname, LocalDate birthDate, String email, Boolean active) {
+    public User(String name, String surname, LocalDate birthDate, String email) {
         this.name = name;
         this.surname = surname;
         this.birthDate = birthDate;

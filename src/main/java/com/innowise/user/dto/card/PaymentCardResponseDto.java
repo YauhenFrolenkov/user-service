@@ -21,6 +21,10 @@ public class PaymentCardResponseDto implements Serializable {
 
     private Boolean active;
 
+    /**
+     * Empty constructor for serialization/deserialization.
+     * Jackson requires a no-args constructor.
+     */
     public PaymentCardResponseDto() {
     }
 

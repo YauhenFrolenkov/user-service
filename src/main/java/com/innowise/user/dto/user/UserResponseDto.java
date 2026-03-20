@@ -26,6 +26,10 @@ public class UserResponseDto implements Serializable {
 
     private List<PaymentCardResponseDto> cards;
 
+    /**
+     * Empty constructor for serialization/deserialization.
+     * Jackson requires a no-args constructor.
+     */
     public UserResponseDto() {
     }
 

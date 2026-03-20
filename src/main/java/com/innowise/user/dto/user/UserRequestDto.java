@@ -21,6 +21,10 @@ public class UserRequestDto {
     @NotBlank
     private String email;
 
+    /**
+     * Empty constructor for serialization/deserialization.
+     * Jackson requires a no-args constructor.
+     */
     public UserRequestDto() {
     }
 

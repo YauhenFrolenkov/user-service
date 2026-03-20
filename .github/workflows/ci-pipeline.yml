@@ -68,19 +68,17 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-maven-
 
-      - name: Build with Maven
-        run: mvn clean install -B
+      - name: Build & Test with Jacoco
+        run: mvn clean test jacoco:report -B
 
-      - name: Run Tests
-        run: mvn test
-
-      - name: SonarQube Analysis
+      - name: SonarCloud Analysis
         run: |
           mvn sonar:sonar \
             -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY }} \
             -Dsonar.organization=${{ secrets.SONAR_ORGANIZATION }} \
             -Dsonar.login=${{ secrets.SONAR_TOKEN }} \
-            -Dsonar.host.url=https://sonarcloud.io
+            -Dsonar.host.url=https://sonarcloud.io \
+            -Dsonar.coverage.jacoco.xmlReportPaths=target/jacoco-report/jacoco.xml
 
       - name: Build Docker Image
         run: docker build -t user-service .

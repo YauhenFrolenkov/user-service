@@ -22,6 +22,10 @@ public class PaymentCardRequestDto {
     @Future
     private LocalDate expirationDate;
 
+    /**
+     * Empty constructor for serialization/deserialization.
+     * Jackson requires a no-args constructor.
+     */
     public PaymentCardRequestDto() {
     }
 
