@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class JwtProviderTest {
+class JwtProviderTest {
 
     private static final String TEST_SECRET =
             "test-jwt-secret-key-for-unit-tests-only-12345";

@@ -12,7 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith(MockitoExtension.class)
-public class CustomAccessDeniedHandlerTest {
+class CustomAccessDeniedHandlerTest {
 
     private CustomAccessDeniedHandler handler;
 
