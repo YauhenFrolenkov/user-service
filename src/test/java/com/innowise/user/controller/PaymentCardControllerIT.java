@@ -6,6 +6,8 @@ import com.innowise.user.dto.card.PaymentCardResponseDto;
 import com.innowise.user.entity.User;
 import com.innowise.user.repository.PaymentCardRepository;
 import com.innowise.user.repository.UserRepository;
+import com.innowise.user.security.CardSecurity;
+import com.innowise.user.security.JwtProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -13,8 +15,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
@@ -22,6 +26,9 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.time.LocalDate;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -30,7 +37,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
-@AutoConfigureMockMvc
+@AutoConfigureMockMvc(addFilters = false)
 @Testcontainers
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class PaymentCardControllerIT {
@@ -60,10 +67,19 @@ class PaymentCardControllerIT {
     @Autowired
     private PaymentCardRepository paymentCardRepository;
 
+    @MockitoBean
+    private JwtProvider jwtProvider;
+
+    @MockitoBean
+    private CardSecurity cardSecurity;
+
     private PaymentCardRequestDto cardRequestDto;
 
     @BeforeEach
     void setUp() {
+
+        when(cardSecurity.isUserSelfOrAdmin(anyLong(), any())).thenReturn(true);
+        when(cardSecurity.isCardOwnerOrAdmin(anyLong(), any())).thenReturn(true);
 
         paymentCardRepository.deleteAll();
         userRepository.deleteAll();
@@ -102,6 +118,7 @@ class PaymentCardControllerIT {
     }
 
     @Test
+    @WithMockUser(username = "1", roles = {"ADMIN"})
     void testCreateCard() throws Exception {
         User savedUser = createUser();
         cardRequestDto.setUserId(savedUser.getId());
@@ -119,6 +136,7 @@ class PaymentCardControllerIT {
     }
 
     @Test
+    @WithMockUser(username = "1", roles = {"ADMIN"})
     void testCreateSixthCard_ShouldReturnError() throws Exception {
         User savedUser = createUser();
 
@@ -138,6 +156,7 @@ class PaymentCardControllerIT {
     }
 
     @Test
+    @WithMockUser(username = "1", roles = {"ADMIN"})
     void testGetCardById() throws Exception {
         User savedUser = createUser();
         PaymentCardResponseDto createdCard = createCard(savedUser);
@@ -151,6 +170,7 @@ class PaymentCardControllerIT {
     }
 
     @Test
+    @WithMockUser(username = "1", roles = {"ADMIN"})
     void testGetCardsByUserId() throws Exception {
         User savedUser = createUser();
         createCard(savedUser);
@@ -162,6 +182,7 @@ class PaymentCardControllerIT {
     }
 
     @Test
+    @WithMockUser(username = "1", roles = {"ADMIN"})
     void testUpdateCard() throws Exception {
         User savedUser = createUser();
         PaymentCardResponseDto createdCard = createCard(savedUser);
@@ -182,6 +203,7 @@ class PaymentCardControllerIT {
     }
 
     @Test
+    @WithMockUser(username = "1", roles = {"ADMIN"})
     void testActivateDeactivateCard() throws Exception {
         User savedUser = createUser();
         PaymentCardResponseDto createdCard = createCard(savedUser);
@@ -194,6 +216,7 @@ class PaymentCardControllerIT {
     }
 
     @Test
+    @WithMockUser(username = "1", roles = {"ADMIN"})
     void testGetAllCards() throws Exception {
         User savedUser = createUser();
         createCard(savedUser);
@@ -207,6 +230,7 @@ class PaymentCardControllerIT {
     }
 
     @Test
+    @WithMockUser(username = "1", roles = {"ADMIN"})
     void testGetAllActiveCards() throws Exception {
         User savedUser = createUser();
         createCard(savedUser);
@@ -218,6 +242,7 @@ class PaymentCardControllerIT {
     }
 
     @Test
+    @WithMockUser(username = "1", roles = {"ADMIN"})
     void testGetCardByNumber() throws Exception {
         User savedUser = createUser();
         PaymentCardResponseDto createdCard = createCard(savedUser);

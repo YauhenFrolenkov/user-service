@@ -7,6 +7,7 @@ import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Optional;
@@ -22,18 +23,21 @@ public class UserController {
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UserResponseDto> createUser(@Valid @RequestBody UserRequestDto dto) {
         UserResponseDto response = userService.createUser(dto);
         return ResponseEntity.status(201).body(response);
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("@cardSecurity.isUserSelfOrAdmin(#id, authentication)")
     public ResponseEntity<UserResponseDto> getUserById(@PathVariable Long id) {
         UserResponseDto response = userService.getUserById(id);
         return ResponseEntity.ok(response);
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Page<UserResponseDto>> getUsers(
             @RequestParam(required = false) String firstName,
             @RequestParam(required = false) String lastName,
@@ -44,6 +48,7 @@ public class UserController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("@cardSecurity.isUserSelfOrAdmin(#id, authentication)")
     public ResponseEntity<UserResponseDto> updateUser(
             @PathVariable Long id,
             @Valid @RequestBody UserRequestDto dto
@@ -53,18 +58,21 @@ public class UserController {
     }
 
     @PatchMapping("/{id}/activate")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> activateUser(@PathVariable Long id) {
         userService.activateUser(id);
         return ResponseEntity.noContent().build();
     }
 
     @PatchMapping("/{id}/deactivate")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deactivateUser(@PathVariable Long id) {
         userService.deactivateUser(id);
         return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/email")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UserResponseDto> getUserByEmail(@RequestParam String email) {
         Optional<UserResponseDto> userOpt = userService.getUserByEmail(email);
         return userOpt.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());

@@ -6,6 +6,7 @@ import com.innowise.user.entity.PaymentCard;
 import com.innowise.user.entity.User;
 import com.innowise.user.exception.MaxCardsExceededException;
 import com.innowise.user.exception.PaymentCardNotFoundException;
+import com.innowise.user.exception.UserNotFoundException;
 import com.innowise.user.mapper.PaymentCardMapper;
 import com.innowise.user.repository.PaymentCardRepository;
 import com.innowise.user.repository.UserRepository;
@@ -254,6 +255,71 @@ class PaymentCardServiceImplTest {
         when(paymentCardRepository.findByNumberNative("0000")).thenReturn(Optional.empty());
         assertThrows(PaymentCardNotFoundException.class,
                 () -> paymentCardService.getCardByNumber("0000"));
+    }
+
+    @Test
+    void testActivateCard_AlreadyActive() {
+        card.setActive(true);
+
+        when(paymentCardRepository.findByIdIncludingInactive(1L))
+                .thenReturn(Optional.of(card));
+
+        paymentCardService.activateCard(1L);
+
+        assertTrue(card.getActive());
+
+        verify(paymentCardRepository, times(1)).save(card);
+    }
+
+    @Test
+    void testDeactivateCard_AlreadyInactive() {
+        card.setActive(false);
+
+        when(paymentCardRepository.findByIdIncludingInactive(1L))
+                .thenReturn(Optional.of(card));
+
+        paymentCardService.deactivateCard(1L);
+
+        assertFalse(card.getActive());
+
+        verify(paymentCardRepository, times(1)).save(card);
+    }
+
+    @Test
+    void testUpdateCard_PartialUpdate() {
+        PaymentCardRequestDto updateDto = new PaymentCardRequestDto();
+        updateDto.setNumber(null); // будет перезаписано
+        updateDto.setHolder("New Holder");
+        updateDto.setExpirationDate(null);
+
+        when(paymentCardRepository.findByIdIncludingInactive(1L))
+                .thenReturn(Optional.of(card));
+
+        when(paymentCardRepository.save(card)).thenReturn(card);
+        when(paymentCardMapper.toDto(card)).thenReturn(cardResponseDto);
+
+        paymentCardService.updateCard(1L, updateDto);
+
+        assertNull(card.getNumber());
+
+        assertEquals("New Holder", card.getHolder());
+
+        verify(paymentCardRepository).save(card);
+    }
+
+    @Test
+    void testCreateCard_UserNotFound() {
+        when(userRepository.findByIdForUpdate(1L))
+                .thenReturn(Optional.empty());
+
+        assertThrows(UserNotFoundException.class,
+                () -> paymentCardService.createCard(cardRequestDto));
+    }
+
+    @Test
+    void testGetCardByNumber_Null() {
+        assertThrows(Exception.class,
+                () -> paymentCardService.getCardByNumber(null));
     }
 
 }
