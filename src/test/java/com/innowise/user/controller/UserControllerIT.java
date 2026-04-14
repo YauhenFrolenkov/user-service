@@ -67,6 +67,7 @@ class UserControllerIT {
     private CardSecurity cardSecurity;
 
     private UserRequestDto userRequestDto;
+    private static long userIdSequence = 1;
 
     @BeforeEach
     void setUp() {
@@ -74,6 +75,7 @@ class UserControllerIT {
         userRepository.deleteAll();
 
         userRequestDto = new UserRequestDto();
+        userRequestDto.setId(userIdSequence++);
         userRequestDto.setName("Yauhen");
         userRequestDto.setSurname("Fraliankou");
         userRequestDto.setEmail("yauhen@example.com");
@@ -148,6 +150,7 @@ class UserControllerIT {
         UserResponseDto createdUser = createUser();
 
         UserRequestDto updatedDto = new UserRequestDto();
+        updatedDto.setId(createdUser.getId());
         updatedDto.setName("UpdatedName");
         updatedDto.setSurname("UpdatedSurname");
         updatedDto.setEmail("updated@example.com");

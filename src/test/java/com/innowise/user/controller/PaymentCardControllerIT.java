@@ -74,6 +74,7 @@ class PaymentCardControllerIT {
     private CardSecurity cardSecurity;
 
     private PaymentCardRequestDto cardRequestDto;
+    private static long userIdSequence = 1;
 
     @BeforeEach
     void setUp() {
@@ -92,6 +93,7 @@ class PaymentCardControllerIT {
 
     private User createUser() {
         User user = new User();
+        user.setId(userIdSequence++);
         user.setName("Yauhen");
         user.setSurname("Fraliankou");
         user.setEmail("yauhen@example.com");

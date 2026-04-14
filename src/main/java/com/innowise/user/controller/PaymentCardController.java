@@ -76,7 +76,7 @@ public class PaymentCardController {
     }
 
     @GetMapping("/active")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<PaymentCardResponseDto>> getAllActiveCards() {
         List<PaymentCardResponseDto> cards = paymentCardService.getAllActiveCards();
         return ResponseEntity.ok(cards);
