@@ -46,6 +46,8 @@ jobs:
       REDIS_PORT: 6379
       REDIS_PASSWORD: ""
 
+      JWT_SECRET: ${{ secrets.JWT_SECRET }}
+
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
       SONAR_PROJECT_KEY: ${{ secrets.SONAR_PROJECT_KEY }}
       SONAR_ORGANIZATION: ${{ secrets.SONAR_ORGANIZATION }}

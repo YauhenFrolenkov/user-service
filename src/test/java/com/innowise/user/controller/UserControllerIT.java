@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.innowise.user.dto.user.UserRequestDto;
 import com.innowise.user.dto.user.UserResponseDto;
 import com.innowise.user.repository.UserRepository;
+import com.innowise.user.security.CardSecurity;
+import com.innowise.user.security.JwtProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -11,14 +13,19 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -26,7 +33,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
-@AutoConfigureMockMvc
+@AutoConfigureMockMvc(addFilters = false)
 @Testcontainers
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class UserControllerIT {
@@ -53,7 +60,14 @@ class UserControllerIT {
     @Autowired
     private UserRepository userRepository;
 
+    @MockitoBean
+    private JwtProvider jwtProvider;
+
+    @MockitoBean
+    private CardSecurity cardSecurity;
+
     private UserRequestDto userRequestDto;
+    private static long userIdSequence = 1;
 
     @BeforeEach
     void setUp() {
@@ -61,9 +75,13 @@ class UserControllerIT {
         userRepository.deleteAll();
 
         userRequestDto = new UserRequestDto();
+        userRequestDto.setId(userIdSequence++);
         userRequestDto.setName("Yauhen");
         userRequestDto.setSurname("Fraliankou");
         userRequestDto.setEmail("yauhen@example.com");
+
+        when(cardSecurity.isUserSelfOrAdmin(anyLong(), any())).thenReturn(true);
+        when(cardSecurity.isCardOwnerOrAdmin(anyLong(), any())).thenReturn(true);
 
     }
 
@@ -83,6 +101,7 @@ class UserControllerIT {
 
 
     @Test
+    @WithMockUser(roles = "ADMIN")
     void testCreateUser() throws Exception {
         UserResponseDto createdUser = createUser();
 
@@ -96,6 +115,7 @@ class UserControllerIT {
     }
 
     @Test
+    @WithMockUser(roles = "ADMIN")
     void testGetUserById() throws Exception {
         UserResponseDto createdUser = createUser();
 
@@ -110,6 +130,7 @@ class UserControllerIT {
     }
 
     @Test
+    @WithMockUser(roles = "ADMIN")
     void testGetUsers() throws Exception {
         createUser();
 
@@ -124,10 +145,12 @@ class UserControllerIT {
 
 
     @Test
+    @WithMockUser(roles = "ADMIN")
     void testUpdateUser() throws Exception {
         UserResponseDto createdUser = createUser();
 
         UserRequestDto updatedDto = new UserRequestDto();
+        updatedDto.setId(createdUser.getId());
         updatedDto.setName("UpdatedName");
         updatedDto.setSurname("UpdatedSurname");
         updatedDto.setEmail("updated@example.com");
@@ -144,6 +167,7 @@ class UserControllerIT {
     }
 
     @Test
+    @WithMockUser(roles = "ADMIN")
     void testActivateDeactivateUser() throws Exception {
         UserResponseDto createdUser = createUser();
 
@@ -162,6 +186,7 @@ class UserControllerIT {
     }
 
     @Test
+    @WithMockUser(roles = "ADMIN")
     void testGetUserByEmail() throws Exception {
         createUser();
 

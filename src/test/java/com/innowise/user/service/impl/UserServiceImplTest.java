@@ -267,5 +267,51 @@ class UserServiceImplTest {
         assertTrue(result.isEmpty());
     }
 
+    @Test
+    void testActivateUser_AlreadyActive() {
+        user.setActive(true);
+
+        when(userRepository.findByIdIncludingInactive(1L))
+                .thenReturn(Optional.of(user));
+
+        userService.activateUser(1L);
+
+        assertTrue(user.getActive());
+
+        verify(userRepository, times(1)).save(user);
+        verify(paymentCardRepository, times(1)).activateCardsByUserId(1L);
+
+    }
+
+    @Test
+    void testDeactivateUser_AlreadyInactive() {
+        user.setActive(false);
+
+        when(userRepository.findByIdIncludingInactive(1L))
+                .thenReturn(Optional.of(user));
+
+        userService.deactivateUser(1L);
+
+        assertFalse(user.getActive());
+
+        verify(userRepository, times(1)).save(user);
+        verify(paymentCardRepository, times(1)).deactivateCardsByUserId(1L);
+    }
+
+    @Test
+    void testGetUsers_WithFilters() {
+        Page<User> page = new PageImpl<>(List.of(user));
+
+        when(userRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(page);
+
+        when(userMapper.toDto(user)).thenReturn(userResponseDto);
+
+        Page<UserResponseDto> result =
+                userService.getUsers("Yauhen", "yauhen@example.com", PageRequest.of(0, 10));
+
+        assertEquals(1, result.getTotalElements());
+    }
+
 }
 

@@ -5,17 +5,16 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.innowise.user.controller.PaymentCardController;
 import com.innowise.user.dto.card.PaymentCardRequestDto;
 import com.innowise.user.dto.card.PaymentCardResponseDto;
+import com.innowise.user.security.JwtProvider;
 import com.innowise.user.service.PaymentCardService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -31,14 +30,17 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(PaymentCardController.class)
-@Import(PaymentCardControllerTest.Config.class)
+@AutoConfigureMockMvc(addFilters = false)
 @ExtendWith(SpringExtension.class)
 class PaymentCardControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @Autowired
+    @MockitoBean
     private PaymentCardService paymentCardService;
+
+    @MockitoBean
+    private JwtProvider jwtProvider;
 
     private PaymentCardRequestDto cardRequestDto;
     private PaymentCardResponseDto cardResponseDto;
@@ -46,18 +48,10 @@ class PaymentCardControllerTest {
     private final ObjectMapper objectMapper = new ObjectMapper()
             .registerModule(new JavaTimeModule());
 
-    @TestConfiguration
-    static class Config {
-        @Bean
-        public PaymentCardService paymentCardService() {
-            return Mockito.mock(PaymentCardService.class);
-        }
-    }
-
     @BeforeEach
     void setUp() {
         cardRequestDto = new PaymentCardRequestDto();
-        cardRequestDto.setNumber("1234567890123456"); // ровно 16 цифр
+        cardRequestDto.setNumber("1234567890123456");
         cardRequestDto.setHolder("Yauhen");
         cardRequestDto.setExpirationDate(LocalDate.of(2030, 12, 31));
         cardRequestDto.setUserId(1L);
@@ -126,5 +120,31 @@ class PaymentCardControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(1))
                 .andExpect(jsonPath("$[0].number").value("1234567890123456"));
+    }
+
+    @Test
+    void testUpdateCard_BadRequest() throws Exception {
+        PaymentCardRequestDto invalid = new PaymentCardRequestDto();
+        invalid.setNumber("");
+
+        mockMvc.perform(put("/cards/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(invalid)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void testGetCardById_InvalidId() throws Exception {
+        mockMvc.perform(get("/cards/xyz"))
+                .andExpect(status().isInternalServerError());
+    }
+
+    @Test
+    void testGetCardById_NotFound() throws Exception {
+        when(paymentCardService.getCardById(1L))
+                .thenThrow(new RuntimeException("Not found"));
+
+        mockMvc.perform(get("/cards/1"))
+                .andExpect(status().isInternalServerError());
     }
 }
