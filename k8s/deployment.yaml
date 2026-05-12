@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: user-service
-          image: api-gateway-user-service:latest
+          image: user-service:latest
           imagePullPolicy: Never
 
           ports:
@@ -43,7 +43,10 @@ spec:
               value: "6379"
 
             - name: JWT_SECRET
-              value: superSecretKeyThatIsLongEnoughForJwt123456789
+              valueFrom:
+                secretKeyRef:
+                  name: user-service-secret
+                  key: jwt-secret
 
           startupProbe:
             httpGet:
