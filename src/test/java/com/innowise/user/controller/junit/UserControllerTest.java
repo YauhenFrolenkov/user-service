@@ -1,22 +1,24 @@
 package com.innowise.user.controller.junit;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.innowise.user.controller.UserController;
 import com.innowise.user.dto.user.UserRequestDto;
 import com.innowise.user.dto.user.UserResponseDto;
+import com.innowise.user.exception.UserNotFoundException;
+import com.innowise.user.security.JwtProvider;
 import com.innowise.user.service.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDate;
@@ -30,15 +32,24 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import org.springframework.http.MediaType;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 
 @WebMvcTest(UserController.class)
+@AutoConfigureMockMvc(addFilters = false)
 @Import(UserControllerTest.Config.class)
 class UserControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
+    @MockitoBean
+    private JwtProvider jwtProvider;
+
     @Autowired
-    private UserService userService; // мок автоматически
+    private ObjectMapper objectMapper;
+
+    @Autowired
+    private UserService userService;
 
     private UserRequestDto userRequestDto;
     private UserResponseDto userResponseDto;
@@ -55,7 +66,7 @@ class UserControllerTest {
     void setUp() {
         userRequestDto = new UserRequestDto();
         userRequestDto.setName("Yauhen");
-        userRequestDto.setSurname("Fraliankou");  // обязательно, чтобы пройти @NotBlank
+        userRequestDto.setSurname("Fraliankou");
         userRequestDto.setBirthDate(LocalDate.of(1990, 1, 1));
         userRequestDto.setEmail("yauhen@example.com");
 
@@ -100,7 +111,8 @@ class UserControllerTest {
     @Test
     void testGetUsers() throws Exception {
         Page<UserResponseDto> page = new PageImpl<>(List.of(userResponseDto));
-        when(userService.getUsers(null, null, PageRequest.of(0, 10))).thenReturn(page);
+        when(userService.getUsers(eq(null), eq(null), any()))
+                .thenReturn(page);
 
         mockMvc.perform(get("/users")
                         .param("page", "0")
@@ -112,7 +124,8 @@ class UserControllerTest {
     @Test
     void testGetUsers_Empty() throws Exception {
         Page<UserResponseDto> emptyPage = new PageImpl<>(Collections.emptyList());
-        when(userService.getUsers(null, null, PageRequest.of(0, 10))).thenReturn(emptyPage);
+        when(userService.getUsers(eq(null), eq(null), any()))
+                .thenReturn(emptyPage);
 
         mockMvc.perform(get("/users")
                         .param("page", "0")
@@ -139,17 +152,42 @@ class UserControllerTest {
 
     @Test
     void testActivateUser_NotFound() throws Exception {
-        doThrow(new RuntimeException("User not found")).when(userService).activateUser(1L);
+        doThrow(new UserNotFoundException(1L))
+                .when(userService).activateUser(1L);
 
         mockMvc.perform(patch("/users/1/activate"))
-                .andExpect(status().is5xxServerError());
+                .andExpect(status().isNotFound());
     }
 
     @Test
     void testDeactivateUser_NotFound() throws Exception {
-        doThrow(new RuntimeException("User not found")).when(userService).deactivateUser(1L);
+        doThrow(new UserNotFoundException(1L))
+                .when(userService).deactivateUser(1L);
 
         mockMvc.perform(patch("/users/1/deactivate"))
-                .andExpect(status().is5xxServerError());
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void testCreateUser_BadRequest() throws Exception {
+        UserRequestDto invalid = new UserRequestDto();
+        invalid.setEmail("invalid-email"); // если есть @Email validation
+
+        mockMvc.perform(post("/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(invalid)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void testGetUserById_InvalidId() throws Exception {
+        mockMvc.perform(get("/users/abc"))
+                .andExpect(status().isInternalServerError());
+    }
+
+    @Test
+    void testGetUserByEmail_MissingParam() throws Exception {
+        mockMvc.perform(get("/users/email"))
+                .andExpect(status().isInternalServerError());
     }
 }

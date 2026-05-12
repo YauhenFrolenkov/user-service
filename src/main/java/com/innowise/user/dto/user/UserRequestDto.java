@@ -2,11 +2,15 @@ package com.innowise.user.dto.user;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Past;
 
 import java.time.LocalDate;
 
 public class UserRequestDto {
+
+    @NotNull
+    private Long id;
 
     @NotBlank
     private String name;
@@ -27,6 +31,10 @@ public class UserRequestDto {
      */
     public UserRequestDto() {
     }
+
+    public Long getId() {return id;}
+
+    public void setId(Long id) {this.id = id;}
 
     public String getName() {
         return name;

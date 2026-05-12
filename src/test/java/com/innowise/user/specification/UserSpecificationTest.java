@@ -7,7 +7,7 @@ import org.springframework.data.jpa.domain.Specification;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-public class UserSpecificationTest {
+class UserSpecificationTest {
     @Test
     void testHasFirstName_NotNull() {
         Specification<User> spec = UserSpecification.hasFirstName("John");
@@ -17,6 +17,7 @@ public class UserSpecificationTest {
         try {
             spec.toPredicate(null, null, null);
         } catch (Exception ignored) {
+            // ignored because we are only testing specification creation
         }
     }
 
@@ -30,6 +31,7 @@ public class UserSpecificationTest {
             Object result = spec.toPredicate(null, null, null);
             assertNull(result);
         } catch (Exception ignored) {
+            // ignored because we are only testing specification creation
         }
     }
 
@@ -42,6 +44,7 @@ public class UserSpecificationTest {
         try {
             spec.toPredicate(null, null, null);
         } catch (Exception ignored) {
+            // ignored because we are only testing specification creation
         }
     }
 
@@ -55,6 +58,7 @@ public class UserSpecificationTest {
             Object result = spec.toPredicate(null, null, null);
             assertNull(result);
         } catch (Exception ignored) {
+            // ignored because we are only testing specification creation
         }
     }
 
@@ -67,6 +71,7 @@ public class UserSpecificationTest {
         try {
             spec.toPredicate(null, null, null);
         } catch (Exception ignored) {
+            // ignored because we are only testing specification creation
         }
     }
 }

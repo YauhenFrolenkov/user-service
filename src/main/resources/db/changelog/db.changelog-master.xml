@@ -10,7 +10,7 @@
     <changeSet id="1" author="yauhen">
 
         <createTable tableName="users">
-            <column name="id" type="BIGINT" autoIncrement="true">
+            <column name="id" type="BIGINT">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
             <column name="name" type="VARCHAR(100)"/>
